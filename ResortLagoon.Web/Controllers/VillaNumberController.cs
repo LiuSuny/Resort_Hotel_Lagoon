@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc.Rendering;
 using ResortLagoon.Domain.Entities;
 using ResortLagoon.Infrastructure.Data;
+using ResortLagoon.Web.ViewModels;
 
 namespace ResortLagoon.Web.Controllers
 {
@@ -15,15 +16,33 @@ namespace ResortLagoon.Web.Controllers
 
         public IActionResult Create()
         {
-            //use projection to display existing villa in view 
-            IEnumerable<SelectListItem> list = 
-                _db.Villas.ToList()
-                .Select(u => new SelectListItem
+            VillaNumberVM villaList = new()
             {
-                Text = u.Name,
-                Value = u.Id.ToString()
-            });
-            return View();
+                VillaList = _db.Villas.ToList()
+                .Select(u => new SelectListItem
+                {
+                    Text = u.Name,
+                    Value = u.Id.ToString()
+                })
+            };
+
+
+           // //use projection to display existing villa in view 
+           // IEnumerable<SelectListItem> list = 
+           //     _db.Villas.ToList()
+           //     .Select(u => new SelectListItem
+           // {
+           //     Text = u.Name,
+           //     Value = u.Id.ToString()
+           // });
+
+           // //using view data to pass from controller to the view 
+           //// ViewData["Villalist"] = list;
+
+           //  //or
+           // ViewBag.Villalist = list;
+
+            return View(villaList);
         }
 
         [HttpPost]
