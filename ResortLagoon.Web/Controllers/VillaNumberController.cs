@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.EntityFrameworkCore;
 using ResortLagoon.Domain.Entities;
 using ResortLagoon.Infrastructure.Data;
 using ResortLagoon.Web.ViewModels;
@@ -10,7 +11,7 @@ namespace ResortLagoon.Web.Controllers
     {
         public IActionResult Index()
         {
-            var villaNumber = _db.villaNumbers.ToList();
+            var villaNumber = _db.villaNumbers.Include(u => u.Villa).ToList();
             return View(villaNumber);
         }
 
@@ -25,38 +26,36 @@ namespace ResortLagoon.Web.Controllers
                     Value = u.Id.ToString()
                 })
             };
-
-
-           // //use projection to display existing villa in view 
-           // IEnumerable<SelectListItem> list = 
-           //     _db.Villas.ToList()
-           //     .Select(u => new SelectListItem
-           // {
-           //     Text = u.Name,
-           //     Value = u.Id.ToString()
-           // });
-
-           // //using view data to pass from controller to the view 
-           //// ViewData["Villalist"] = list;
-
-           //  //or
-           // ViewBag.Villalist = list;
-
             return View(villaList);
         }
 
         [HttpPost]
-        public IActionResult Create(VillaNumber villaNumber)
+        public IActionResult Create(VillaNumberVM obj)
         {
-            //ModelState.Remove("villa");
-            if (ModelState.IsValid)
+            bool isRoomNumberExist = _db.villaNumbers.Any(u => u.Villa_Number == obj.VillaNumber.Villa_Number);
+
+            if (ModelState.IsValid && !isRoomNumberExist)
             {
-                _db.villaNumbers.Add(villaNumber);
+                _db.villaNumbers.Add(obj.VillaNumber);
                 _db.SaveChanges();
                 TempData["success"] = "The villa number has been created successfully.";
                 return RedirectToAction("Index");
             }
-            return View();
+
+            if(isRoomNumberExist)
+            {
+                TempData["error"] = "The villa number already exists.";
+
+            }
+
+            obj.VillaList = _db.Villas.ToList()
+                .Select(u => new SelectListItem
+                {
+                    Text = u.Name,
+                    Value = u.Id.ToString()
+                });
+
+            return View(obj);
         }
 
         public IActionResult Update(int id)
