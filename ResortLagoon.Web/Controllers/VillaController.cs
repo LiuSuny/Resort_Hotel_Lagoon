@@ -28,6 +28,56 @@ namespace ResortLagoon.Web.Controllers
             {
                 _db.Villas.Add(villa);
                 _db.SaveChanges();
+                TempData["success"] = "The villa has been created successfully.";
+                return RedirectToAction("Index");
+            }
+            return View();
+        }
+
+        public IActionResult Update(int id)
+        {
+            Villa? obj = _db.Villas.FirstOrDefault(u => u.Id == id);
+            if (obj == null)
+            {
+                return RedirectToAction("Error", "Home");
+                //return NotFound();
+
+            }
+            return View(obj);
+        }
+
+        [HttpPost]
+        public IActionResult Update(Villa obj)
+        {
+            if (ModelState.IsValid && obj.Id > 0)
+            {
+                _db.Villas.Update(obj);
+                _db.SaveChanges();
+                TempData["success"] = "The villa has been updated successfully.";
+                return RedirectToAction("Index");
+            }
+            return View();
+        }
+
+        public IActionResult Delete(int id)
+        {
+            Villa? obj = _db.Villas.FirstOrDefault(u => u.Id == id);
+            if (obj is null)
+            {
+                return RedirectToAction("Error", "Home");
+            }
+            return View(obj);
+        }
+
+        [HttpPost]
+        public IActionResult Delete(Villa obj)
+        {
+            Villa? objFromDb = _db.Villas.FirstOrDefault(u => u.Id == obj.Id);
+            if (objFromDb is not null)
+            {
+                _db.Villas.Remove(objFromDb);
+                _db.SaveChanges();
+                TempData["success"] = "The villa has been deleted successfully.";
                 return RedirectToAction("Index");
             }
             return View();
