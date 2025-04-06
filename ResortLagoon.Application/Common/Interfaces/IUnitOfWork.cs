@@ -10,6 +10,7 @@ namespace ResortLagoon.Application.Common.Interfaces
     {
         IVillaRepository Villa { get; }
         IVillaNumberRepository VillaNumber { get; }
+        IAmentityRepository Amenity { get; }
         void Save();
     }
 }
