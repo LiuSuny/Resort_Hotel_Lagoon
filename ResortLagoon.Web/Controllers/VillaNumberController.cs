@@ -1,17 +1,18 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
+using ResortLagoon.Application.Common.Interfaces;
 using ResortLagoon.Domain.Entities;
 using ResortLagoon.Infrastructure.Data;
 using ResortLagoon.Web.ViewModels;
 
 namespace ResortLagoon.Web.Controllers
 {
-    public class VillaNumberController(ApplicationDbContext _db) : Controller
+    public class VillaNumberController(IUnitOfWork _unitOfWork) : Controller
     {
         public IActionResult Index()
         {
-            var villaNumber = _db.villaNumbers.Include(u => u.Villa).ToList();
+            var villaNumber = _unitOfWork.VillaNumber.GetAll(includeProperties: "Villa").ToList();
             return View(villaNumber);
         }
 
@@ -19,7 +20,7 @@ namespace ResortLagoon.Web.Controllers
         {
             VillaNumberVM villaList = new()
             {
-                VillaList = _db.Villas.ToList()
+                VillaList = _unitOfWork.Villa.GetAll()
                 .Select(u => new SelectListItem
                 {
                     Text = u.Name,
@@ -32,12 +33,12 @@ namespace ResortLagoon.Web.Controllers
         [HttpPost]
         public IActionResult Create(VillaNumberVM obj)
         {
-            bool isRoomNumberExist = _db.villaNumbers.Any(u => u.Villa_Number == obj.VillaNumber.Villa_Number);
+            bool isRoomNumberExist = _unitOfWork.VillaNumber.Any(u => u.Villa_Number == obj.VillaNumber.Villa_Number);
 
             if (ModelState.IsValid && !isRoomNumberExist)
             {
-                _db.villaNumbers.Add(obj.VillaNumber);
-                _db.SaveChanges();
+                _unitOfWork.VillaNumber.Add(obj.VillaNumber);
+                _unitOfWork.Save();
                 TempData["success"] = "The villa number has been created successfully.";
                 return RedirectToAction(nameof(Index));
             }
@@ -48,7 +49,7 @@ namespace ResortLagoon.Web.Controllers
 
             }
 
-            obj.VillaList = _db.Villas.ToList()
+            obj.VillaList = _unitOfWork.Villa.GetAll()
                 .Select(u => new SelectListItem
                 {
                     Text = u.Name,
@@ -62,14 +63,14 @@ namespace ResortLagoon.Web.Controllers
         {
             VillaNumberVM villaListVM = new()
             {
-                VillaList = _db.Villas.ToList()
+                VillaList = _unitOfWork.Villa.GetAll()
                  .Select(u => new SelectListItem
                  {
                      Text = u.Name,
                      Value = u.Id.ToString()
                  }),
 
-                VillaNumber = _db.villaNumbers.FirstOrDefault(u => u.Villa_Number == villaNumberId)
+                VillaNumber = _unitOfWork.VillaNumber.Get(u => u.Villa_Number == villaNumberId)
             };
 
             if (villaListVM.VillaNumber == null)
@@ -88,13 +89,13 @@ namespace ResortLagoon.Web.Controllers
 
             if (ModelState.IsValid)
             {
-                _db.villaNumbers.Update(villaNumberVM.VillaNumber);
-                _db.SaveChanges();
+                _unitOfWork.VillaNumber.Update(villaNumberVM.VillaNumber);
+                _unitOfWork.Save();
                 TempData["success"] = "The villa number has been updated successfully.";
                 return RedirectToAction(nameof(Index));
             }
 
-            villaNumberVM.VillaList = _db.Villas.ToList()
+            villaNumberVM.VillaList = _unitOfWork.Villa.GetAll()
                 .Select(u => new SelectListItem
                 {
                     Text = u.Name,
@@ -108,14 +109,14 @@ namespace ResortLagoon.Web.Controllers
         {
             VillaNumberVM villaListVM = new()
             {
-                VillaList = _db.Villas.ToList()
+                VillaList = _unitOfWork.Villa.GetAll()
                  .Select(u => new SelectListItem
                  {
                      Text = u.Name,
                      Value = u.Id.ToString()
                  }),
 
-                VillaNumber = _db.villaNumbers.FirstOrDefault(u => u.Villa_Number == villaNumberId)
+                VillaNumber = _unitOfWork.VillaNumber.Get(u => u.Villa_Number == villaNumberId)
             };
 
             if (villaListVM.VillaNumber == null)
@@ -129,12 +130,12 @@ namespace ResortLagoon.Web.Controllers
         [HttpPost]
         public IActionResult Delete(VillaNumberVM villaNumberVM)
         {
-            VillaNumber? objFromDb = _db.villaNumbers
-                 .FirstOrDefault(u => u.Villa_Number == villaNumberVM.VillaNumber.Villa_Number);
+            VillaNumber? objFromDb = _unitOfWork.VillaNumber.Get
+                 (u => u.Villa_Number == villaNumberVM.VillaNumber.Villa_Number);
             if (objFromDb is not null)
             {
-                _db.villaNumbers.Remove(objFromDb);
-                _db.SaveChanges();
+                _unitOfWork.VillaNumber.Remove(objFromDb);
+                _unitOfWork.Save();
                 TempData["success"] = "The villa number has been deleted successfully.";
                 return RedirectToAction(nameof(Index));
             }

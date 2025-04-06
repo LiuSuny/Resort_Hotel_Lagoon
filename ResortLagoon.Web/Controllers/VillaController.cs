@@ -1,15 +1,16 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using ResortLagoon.Application.Common.Interfaces;
 using ResortLagoon.Domain.Entities;
 using ResortLagoon.Infrastructure.Data;
 
 namespace ResortLagoon.Web.Controllers
 {
-    public class VillaController(ApplicationDbContext _db) : Controller
+    public class VillaController(IUnitOfWork _unitOfWork) : Controller
     {
         public IActionResult Index()
         {
-            var villa = _db.Villas.ToList();
-            return View(villa);
+            var villas = _unitOfWork.Villa.GetAll();
+            return View(villas);
         }
 
         public IActionResult Create()
@@ -26,8 +27,8 @@ namespace ResortLagoon.Web.Controllers
             }
             if (ModelState.IsValid)
             {
-                _db.Villas.Add(villa);
-                _db.SaveChanges();
+                _unitOfWork.Villa.Add(villa);
+                _unitOfWork.Save();
                 TempData["success"] = "The villa has been created successfully.";
                 return RedirectToAction(nameof(Index));
             }
@@ -36,7 +37,7 @@ namespace ResortLagoon.Web.Controllers
 
         public IActionResult Update(int id)
         {
-            Villa? obj = _db.Villas.FirstOrDefault(u => u.Id == id);
+            Villa? obj = _unitOfWork.Villa.Get(u => u.Id == id);
             if (obj == null)
             {
                 return RedirectToAction("Error", "Home");
@@ -51,8 +52,8 @@ namespace ResortLagoon.Web.Controllers
         {
             if (ModelState.IsValid && obj.Id > 0)
             {
-                _db.Villas.Update(obj);
-                _db.SaveChanges();
+                _unitOfWork.Villa.Update(obj);
+                _unitOfWork.Save();
                 TempData["success"] = "The villa has been updated successfully.";
                 return RedirectToAction(nameof(Index));
             }
@@ -61,7 +62,7 @@ namespace ResortLagoon.Web.Controllers
 
         public IActionResult Delete(int id)
         {
-            Villa? obj = _db.Villas.FirstOrDefault(u => u.Id == id);
+            Villa? obj = _unitOfWork.Villa.Get(u => u.Id == id);
             if (obj is null)
             {
                 return RedirectToAction("Error", "Home");
@@ -72,11 +73,11 @@ namespace ResortLagoon.Web.Controllers
         [HttpPost]
         public IActionResult Delete(Villa obj)
         {
-            Villa? objFromDb = _db.Villas.FirstOrDefault(u => u.Id == obj.Id);
+            Villa? objFromDb = _unitOfWork.Villa.Get(u => u.Id == obj.Id);
             if (objFromDb is not null)
             {
-                _db.Villas.Remove(objFromDb);
-                _db.SaveChanges();
+                _unitOfWork.Villa.Remove(objFromDb);
+                _unitOfWork.Save();
                 TempData["success"] = "The villa has been deleted successfully.";
                 return RedirectToAction(nameof(Index));
             }
