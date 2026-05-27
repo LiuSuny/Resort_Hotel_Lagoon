@@ -11,8 +11,14 @@ namespace ResortLagoon.Web.Controllers
         RoleManager<IdentityRole> _roleManager,
         SignInManager<ApplicationUser> _signInManager) : Controller
     {
+      
         public IActionResult Login(string returnUrl = null)
         {
+            //if(returnUrl == null)
+            //{
+            //    returnUrl = Url.Content("~/");
+            //}
+
             returnUrl ??= Url.Content("~/");
 
             LoginVM loginVM = new()
