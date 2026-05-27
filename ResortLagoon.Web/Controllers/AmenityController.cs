@@ -1,11 +1,14 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using ResortLagoon.Application.Common.Interfaces;
+using ResortLagoon.Application.Common.Utilities;
 using ResortLagoon.Domain.Entities;
 using ResortLagoon.Web.ViewModels;
 
 namespace ResortLagoon.Web.Controllers
 {
+    [Authorize(Roles = SD.Role_Admin)]
     public class AmenityController(IUnitOfWork _unitOfWork) : Controller
     {
         public IActionResult Index()

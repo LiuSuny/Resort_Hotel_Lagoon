@@ -1,8 +1,11 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
 using ResortLagoon.Application.Common.Interfaces;
+using ResortLagoon.Application.Common.Utilities;
 using ResortLagoon.Domain.Entities;
 using ResortLagoon.Web.ViewModels;
+using System.Threading.Tasks;
 
 namespace ResortLagoon.Web.Controllers
 {
@@ -11,7 +14,7 @@ namespace ResortLagoon.Web.Controllers
         RoleManager<IdentityRole> _roleManager,
         SignInManager<ApplicationUser> _signInManager) : Controller
     {
-      
+
         public IActionResult Login(string returnUrl = null)
         {
             //if(returnUrl == null)
@@ -29,9 +32,134 @@ namespace ResortLagoon.Web.Controllers
             return View(loginVM);
         }
 
-        public IActionResult Register()
+
+        public async Task<IActionResult> Logout()
+        {        
+
+           await _signInManager.SignOutAsync();
+            return RedirectToAction("Index", "Home");
+        }
+
+        public IActionResult AccessDenied()
+        {        
+          return View();
+        }
+
+
+        public IActionResult Register(string returnUrl = null)
         {
-            return View();
+            returnUrl ??= Url.Content("~/");
+            // Ensure roles exist
+            if (!_roleManager.RoleExistsAsync(SD.Role_Admin).GetAwaiter().GetResult())
+            {
+                _roleManager.CreateAsync(new IdentityRole(SD.Role_Admin)).Wait();
+                _roleManager.CreateAsync(new IdentityRole(SD.Role_Customer)).Wait();
+            }
+            // Populate the role list for the view
+            RegisterVM registerVM = new()
+            {
+                RoleList = _roleManager.Roles.Select(r => new SelectListItem
+                {
+                    Text = r.Name,
+                    Value = r.Name,
+                   
+                }),
+                RedirectUrl = returnUrl
+            };
+            
+            return View(registerVM);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> Register(RegisterVM registerVM)
+        {
+            // Ensure roles exist
+            if (!ModelState.IsValid)
+            {
+
+                // Create the user
+                ApplicationUser user = new()
+                {
+                    Name = registerVM.Name,
+                    Email = registerVM.Email,
+                    PhoneNumber = registerVM.PhoneNumber,
+                    NormalizedEmail = registerVM.Email.ToUpper(),
+                    EmailConfirmed = true,
+                    UserName = registerVM.Email,
+                    CreatedAt = DateTime.UtcNow,
+                };
+
+                // Create the user with the specified password
+                var result = await _userManager.CreateAsync(user, registerVM.Password);
+
+                // If user creation is successful, assign role and sign in
+                if (result.Succeeded)
+                {
+                    if (!string.IsNullOrEmpty(registerVM.Role))
+                    {
+                        await _userManager.AddToRoleAsync(user, registerVM.Role);
+                    }
+                    else
+                    {
+                        await _userManager.AddToRoleAsync(user, SD.Role_Customer);
+                    }
+
+                    await _signInManager.SignInAsync(user, isPersistent: false);
+                    if (string.IsNullOrEmpty(registerVM.RedirectUrl))
+                    {
+                        return RedirectToAction("Index", "Home");
+                    }
+                    else
+                    {
+                        return LocalRedirect(registerVM.RedirectUrl);
+                    }
+                }
+
+                // If there are errors, add them to the ModelState and return the view
+                foreach (var error in result.Errors)
+                {
+                    ModelState.AddModelError("", error.Description);
+                }
+            } 
+            // Repopulate the role list for the view
+            registerVM.RoleList = _roleManager.Roles.Select(x => new SelectListItem
+            {
+                Text = x.Name,
+                Value = x.Name
+            });
+
+            return View(registerVM);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> Login(LoginVM loginVM)
+        {
+            if (ModelState.IsValid)
+            {
+                var result = await _signInManager
+                    .PasswordSignInAsync(loginVM.Email, loginVM.Password, loginVM.RememberMe, lockoutOnFailure: false);
+
+
+                if (result.Succeeded)
+                {
+
+
+                    if (string.IsNullOrEmpty(loginVM.RedirectUrl))
+                    {
+                        return RedirectToAction("Index", "Home");
+                    }
+                    else
+                    {
+                        return LocalRedirect(loginVM.RedirectUrl);
+                    }
+                }
+                else
+                {
+                    ModelState.AddModelError("", "Invalid login attempt.");
+                }
+            }
+
+            return View(loginVM);
         }
     }
 }

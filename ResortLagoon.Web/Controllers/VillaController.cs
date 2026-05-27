@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Hosting;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
 using ResortLagoon.Application.Common.Interfaces;
 using ResortLagoon.Domain.Entities;
@@ -6,6 +7,7 @@ using ResortLagoon.Infrastructure.Data;
 
 namespace ResortLagoon.Web.Controllers
 {
+    [Authorize]
     public class VillaController(IUnitOfWork _unitOfWork, IWebHostEnvironment _webHost) : Controller
     {
         public IActionResult Index()

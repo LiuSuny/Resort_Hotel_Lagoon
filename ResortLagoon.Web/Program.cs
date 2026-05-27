@@ -16,6 +16,28 @@ option.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection
 builder.Services.AddIdentity<ApplicationUser,  IdentityRole>()
     .AddEntityFrameworkStores<ApplicationDbContext>().AddDefaultTokenProviders();
 
+//configure the cookie settings for authentication
+builder.Services.ConfigureApplicationCookie(options =>
+{
+    options.AccessDeniedPath = "/Account/AccessDenied";
+    options.LoginPath = "/Account/Login";
+});
+
+//configure the identity options for password, lockout and user settings
+builder.Services.Configure<IdentityOptions>(option =>
+{
+    option.Password.RequiredLength = 6;
+    //option.Password.RequireDigit = true;
+    //option.Password.RequireLowercase = true;
+    //option.Password.RequireNonAlphanumeric = true;
+    //option.Password.RequireUppercase = true;
+    //option.Password.RequiredUniqueChars = 1;
+    //option.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(5);
+    //option.Lockout.MaxFailedAccessAttempts = 5;
+    //option.Lockout.AllowedForNewUsers = true;
+    
+});
+
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 
 var app = builder.Build();
