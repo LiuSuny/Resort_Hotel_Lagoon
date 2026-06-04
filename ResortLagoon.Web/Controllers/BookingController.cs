@@ -3,6 +3,8 @@ using Microsoft.AspNetCore.Mvc;
 using ResortLagoon.Application.Common.Interfaces;
 using ResortLagoon.Application.Common.Utilities;
 using ResortLagoon.Domain.Entities;
+using Stripe;
+using Stripe.Checkout;
 using System.Security.Claims;
 
 namespace ResortLagoon.Web.Controllers
@@ -60,12 +62,60 @@ namespace ResortLagoon.Web.Controllers
             // Save the changes to the database
             _unitOfWork.Save();
 
-            return RedirectToAction(nameof(BookingConfirmation),new {bookingId = booking.Id  } );
+            var domain = Request.Scheme+"://"+Request.Host.Value+"/";
+            var options = new SessionCreateOptions
+            {
+                LineItems = new List<SessionLineItemOptions>(),
+                Mode = "payment",
+                SuccessUrl = domain + $"booking/BookingConfirmation?bookingId={booking.Id}",
+                CancelUrl = domain + $"booking/FinalizeBooking?villaId={booking.VillaId}&checkInDate={booking.CheckInDate}&nights={booking.Nights}",
+            };
+            options.LineItems.Add(new SessionLineItemOptions
+            {
+                PriceData = new SessionLineItemPriceDataOptions
+                {
+                    UnitAmount = (long)(booking.TotalCost * 100), // Stripe expects the amount in cents
+                    Currency = "usd",
+                    ProductData = new SessionLineItemPriceDataProductDataOptions
+                    {
+                        Name = villa.Name,
+                        //Images = new List<string> {domain + villa.ImageUrl },
+                        //Description = $"Check-in: {booking.CheckInDate}, Nights: {booking.Nights}"
+                    }
+                },
+                Quantity = 1,
+            });
+            
+            var service = new SessionService();
+            Session session = service.Create(options);
+             
+            _unitOfWork.Booking.UpdateStripePaymentID(booking.Id, session.Id, session.PaymentIntentId);
+            _unitOfWork.Save();
+            Response.Headers.Add("Location", session.Url);
+            return new StatusCodeResult(303);
+
+
+            //return RedirectToAction(nameof(BookingConfirmation),new {bookingId = booking.Id  } );
         }
 
         [Authorize]
         public IActionResult BookingConfirmation(int bookingId)
         {
+            Booking bookingFromDb = _unitOfWork.Booking.Get(b => b.Id == bookingId, 
+                includeProperties: "User,Villa");
+
+            if(bookingFromDb.Status == SD.StatusPending)
+            {
+                //This is pending booking, we need to check with Stripe if the payment is successful or not
+                var service = new SessionService();
+                Session session = service.Get(bookingFromDb.StripeSessionId);
+                if (session.PaymentStatus.ToLower() == "paid")
+                {
+                    _unitOfWork.Booking.UpdateStatus(bookingFromDb.Id, SD.StatusApproved);
+                    _unitOfWork.Booking.UpdateStripePaymentID(bookingFromDb.Id, session.Id, session.PaymentIntentId);
+                    _unitOfWork.Save();
+                }
+            }
             return View(bookingId);
         }
     }

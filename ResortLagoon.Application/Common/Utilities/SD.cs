@@ -12,7 +12,7 @@ namespace ResortLagoon.Application.Common.Utilities
        public const string Role_Customer = "Customer";
 
        public const string StatusPending = "Pending";
-       public const string StatusApprved = "Approved";
+       public const string StatusApproved = "Approved";
        public const string StatusCheckedIn = "CheckedIn";
        public const string StatusCompleted = "Completed";
        public const string StatusCancelled = "Cancelled";
