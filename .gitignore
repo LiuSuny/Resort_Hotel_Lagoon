@@ -231,6 +231,8 @@ _pkginfo.txt
 
 # Others
 ClientBin/
+# Ignore ASP.NET Core configuration files
+appsettings*.json
 ~$*
 *~
 *.dbmdl
@@ -361,3 +363,4 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+/ResortLagoon.sln
