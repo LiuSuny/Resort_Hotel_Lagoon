@@ -17,6 +17,11 @@ namespace ResortLagoon.Web.Controllers
         {
             _unitOfWork = unitOfWork;
         }
+        [Authorize]
+        public IActionResult Index()
+        {
+            return View();
+        }   
 
         [Authorize]
         public IActionResult FinalizeBooking(int villaId, DateOnly checkInDate, int nights)
@@ -118,5 +123,34 @@ namespace ResortLagoon.Web.Controllers
             }
             return View(bookingId);
         }
+
+     
+        #region API Calls
+        [HttpGet]
+        [Authorize]
+        public IActionResult GetAll()
+        {
+            // Get the current user's ID
+            IEnumerable<Booking> objBookings;
+            // Check if the user is in the Admin role
+            if (User.IsInRole(SD.Role_Admin))
+            {
+                // If the user is an admin, retrieve all bookings with related User and Villa data
+                objBookings = _unitOfWork.Booking.GetAll(includeProperties: "User,Villa");
+            }
+            else
+            {
+                // If the user is not an admin, retrieve only the bookings associated with the current user's ID, including related User and Villa data
+                var claimsIdentity = (ClaimsIdentity)User.Identity;
+                var userId = claimsIdentity.FindFirst(ClaimTypes.NameIdentifier).Value;
+                // Retrieve bookings for the current user with related User and Villa data
+                objBookings = _unitOfWork.Booking
+                    .GetAll(u => u.UserId == userId, includeProperties: "User,Villa");
+            }
+            // Return the bookings as JSON data
+            return Json(new { data = objBookings });
+        }
+
+        #endregion
     }
 }
