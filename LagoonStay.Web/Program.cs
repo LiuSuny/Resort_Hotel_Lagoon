@@ -43,7 +43,7 @@ builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 
 var app = builder.Build();
 //configure the Stripe API key & Need to uncommented 
-//StripeConfiguration.ApiKey = builder.Configuration.GetSection("Stripe:StripeSec").Get<string>(); //This line retrieves the Stripe secret key from the configuration and sets it for use in the application.
+StripeConfiguration.ApiKey = builder.Configuration.GetSection("Stripe:StripeSec").Get<string>(); //This line retrieves the Stripe secret key from the configuration and sets it for use in the application.
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())

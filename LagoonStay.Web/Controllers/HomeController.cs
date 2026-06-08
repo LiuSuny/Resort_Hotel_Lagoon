@@ -6,6 +6,7 @@ using LagoonStay.Web.ViewModels;
 using System;
 using System.Diagnostics;
 using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Database;
+using LagoonStay.Application.Common.Utilities;
 
 namespace LagoonStay.Web.Controllers
 {
@@ -48,12 +49,21 @@ namespace LagoonStay.Web.Controllers
         {
             //Thread.Sleep(2000);
             var villaList = _unitOfWork.Villa.GetAll(includeProperties: "VillaAmenity").ToList();
+
+            var villaNumbersList = _unitOfWork.VillaNumber.GetAll().ToList();
+            var bookingvillas = _unitOfWork.Booking.GetAll(u => u.Status == SD.StatusApproved ||
+            u.Status == SD.StatusCheckedIn).ToList();
+
             foreach (var villa in villaList)
             {
-                if (villa.Id % 2 == 0)
-                {
-                    villa.IsAvailable = false;
-                }
+
+                int roomAvailable = SD.VillaRoomsAvailabile_Count(villa.Id, villaNumbersList,
+                    checkInDate, nights, bookingvillas);
+                villa.IsAvailable = roomAvailable > 0 ? true : false;
+                //if (villa.Id % 2 == 0)
+                //{
+                //    villa.IsAvailable = false;
+                //}
             }
             HomeVM homeVM = new()
             {
