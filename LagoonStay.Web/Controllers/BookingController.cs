@@ -62,8 +62,30 @@ namespace LagoonStay.Web.Controllers
             booking.Status = SD.StatusPending;
             // Set the booking date to the current date and time
             booking.BookingDate = DateTime.Now;
-            // Add the booking to the database
-            _unitOfWork.Booking.Add(booking);
+
+
+            var villaNumbersList = _unitOfWork.VillaNumber.GetAll().ToList();
+            var bookingvillas = _unitOfWork.Booking.GetAll(u => u.Status == SD.StatusApproved ||
+            u.Status == SD.StatusCheckedIn).ToList();
+
+                int roomAvailable = SD.VillaRoomsAvailabile_Count(villa.Id, villaNumbersList,
+                    booking.CheckInDate, booking.Nights, bookingvillas);
+
+
+            if (roomAvailable <= 0)
+            {
+                TempData["error"] = "Room has been sold out.";
+                return RedirectToAction(nameof(FinalizeBooking),
+                    new
+                    {
+                        villaId = booking.VillaId,
+                        checkInDate = booking.CheckInDate,
+                        nights = booking.Nights
+                    });
+
+            }
+                // Add the booking to the database
+                _unitOfWork.Booking.Add(booking);
             // Save the changes to the database
             _unitOfWork.Save();
 
@@ -116,7 +138,7 @@ namespace LagoonStay.Web.Controllers
                 Session session = service.Get(bookingFromDb.StripeSessionId);
                 if (session.PaymentStatus.ToLower() == "paid")
                 {
-                    _unitOfWork.Booking.UpdateStatus(bookingFromDb.Id, SD.StatusApproved);
+                    _unitOfWork.Booking.UpdateStatus(bookingFromDb.Id, SD.StatusApproved, 0);
                     _unitOfWork.Booking.UpdateStripePaymentID(bookingFromDb.Id, session.Id, session.PaymentIntentId);
                     _unitOfWork.Save();
                 }
@@ -130,11 +152,68 @@ namespace LagoonStay.Web.Controllers
             Booking bookingFromDb = _unitOfWork.Booking.Get(b => b.Id == bookingId,
                 includeProperties: "User,Villa");
 
+            if(bookingFromDb.VillaNumber == 0 && bookingFromDb.Status == SD.StatusApproved)
+            {
+                //Assign villa number to the booking
+                var availableVillaNumbers = AssignAvailableVillaNumberByVilla(bookingFromDb.VillaId);
+                bookingFromDb.VillaNumbers = _unitOfWork.VillaNumber
+                    .GetAll(v => v.VillaId == bookingFromDb.VillaId 
+                    && availableVillaNumbers.Any(x=>x==v.Villa_Number)).ToList();
+                
+            }
+
             return View(bookingFromDb);
         }   
+        private List<int> AssignAvailableVillaNumberByVilla(int villaId)
+        {
+            List<int> availableVillaNumber = new();
 
-        #region API Calls
-        [HttpGet]
+            var villaNumbers = _unitOfWork.VillaNumber.GetAll(v => v.VillaId == villaId);
+
+            var checkedInVilla = _unitOfWork.Booking.GetAll(v => v.VillaId == villaId 
+            && v.Status ==SD.StatusCheckedIn).Select(v => v.VillaNumber);
+
+            foreach (var villaNumber in villaNumbers)
+            {
+                if (!checkedInVilla.Contains(villaNumber.Villa_Number))
+                {
+                    availableVillaNumber.Add(villaNumber.Villa_Number);
+                }
+            }
+            return availableVillaNumber;
+
+        }
+
+        [HttpPost]
+        [Authorize(Roles = SD.Role_Admin)]
+        public IActionResult CheckIn(Booking booking)
+        {
+           _unitOfWork.Booking.UpdateStatus(booking.Id, SD.StatusCheckedIn, booking.VillaNumber);
+            _unitOfWork.Save();
+            TempData["success"] = "Booking Updated Successfully.";
+            return RedirectToAction(nameof(BookingDetails), new { bookingId = booking.Id});
+        }
+        [HttpPost]
+        [Authorize(Roles = SD.Role_Admin)]
+        public IActionResult CheckOut(Booking booking)
+        {
+           _unitOfWork.Booking.UpdateStatus(booking.Id, SD.StatusCompleted, booking.VillaNumber);
+            _unitOfWork.Save();
+            TempData["success"] = "Booking Completed Successfully.";
+            return RedirectToAction(nameof(BookingDetails), new { bookingId = booking.Id});
+        }
+        [HttpPost]
+        [Authorize(Roles = SD.Role_Admin)]
+        public IActionResult CancelBooking(Booking booking)
+        {
+           _unitOfWork.Booking.UpdateStatus(booking.Id, SD.StatusCancelled, 0);
+            _unitOfWork.Save();
+            TempData["success"] = "Booking Cancelled Successfully.";
+            return RedirectToAction(nameof(BookingDetails), new { bookingId = booking.Id});
+        }
+
+            #region API Calls
+            [HttpGet]
         [Authorize]
         public IActionResult GetAll(string status)
         {

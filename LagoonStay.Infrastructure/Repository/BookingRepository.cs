@@ -12,7 +12,7 @@ namespace LagoonStay.Infrastructure.Repository
             _db.Bookings.Update(entity);
         }
 
-        public void UpdateStatus(int bookingId, string bookingStatus)
+        public void UpdateStatus(int bookingId, string bookingStatus, int villaNumber = 0)
         {
             //get the booking from the database
             var bookingFromDb = _db.Bookings.FirstOrDefault(u => u.Id == bookingId);
@@ -24,6 +24,7 @@ namespace LagoonStay.Infrastructure.Repository
                 //if the status is checked in, update the actual check in date
                 if (bookingStatus == SD.StatusCheckedIn)
                 {
+                    bookingFromDb.VillaNumber= villaNumber;
                     bookingFromDb.ActualCheckInDate = DateTime.Now;
                 }
                 //if the status is completed, update the actual check out date

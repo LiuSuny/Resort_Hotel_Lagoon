@@ -11,7 +11,7 @@ namespace LagoonStay.Application.Common.Interfaces
     {
         void Update(Booking entity);
         //add a method to update the order booking status 
-        void UpdateStatus(int bookingId, string bookingStatus);
+        void UpdateStatus(int bookingId, string bookingStatus, int villaNumber);
         void UpdateStripePaymentID(int bookingId, string sessionId, string paymentIntentId);
 
     }
