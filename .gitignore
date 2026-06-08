@@ -231,8 +231,7 @@ _pkginfo.txt
 
 # Others
 ClientBin/
-# Ignore ASP.NET Core configuration files
-appsettings*.json
+appsettings.json
 ~$*
 *~
 *.dbmdl
