@@ -1,7 +1,7 @@
-﻿namespace LagoonStay.Web.ViewModels
+﻿namespace LagoonStay.Application.Common.Dto
 {
     // ViewModel for Line Chart
-    public class LineChartVM
+    public class LineChartDto
     {
         // List of series data for the line chart
         public List<ChartData> Series { get; set; }

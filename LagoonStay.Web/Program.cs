@@ -1,9 +1,11 @@
-using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
 using LagoonStay.Application.Common.Interfaces;
+using LagoonStay.Application.Services.Implementation;
+using LagoonStay.Application.Services.Implementation.Interface;
 using LagoonStay.Domain.Entities;
 using LagoonStay.Infrastructure.Data;
 using LagoonStay.Infrastructure.Repository;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using Stripe;
 using Syncfusion.Licensing;
 
@@ -41,7 +43,8 @@ builder.Services.Configure<IdentityOptions>(option =>
 });
 
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
-
+builder.Services.AddScoped<IDashboardService, DashboardService>();
+builder.Services.AddScoped<IDbInitializer, DbInitializer>();
 var app = builder.Build();
 //configure the Stripe API key & Need to uncommented 
 StripeConfiguration.ApiKey = builder.Configuration.GetSection("Stripe:StripeSec").Get<string>(); //This line retrieves the Stripe secret key from the configuration and sets it for use in the application.
@@ -64,8 +67,20 @@ app.UseRouting();
 
 app.UseAuthorization();
 
+SeedDatabase();
+
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
 
 app.Run();
+
+
+void SeedDatabase()
+{
+    using (var scope = app.Services.CreateScope())
+    {
+        var dbInitializer = scope.ServiceProvider.GetRequiredService<IDbInitializer>();
+        dbInitializer.Initialize();
+    }
+}

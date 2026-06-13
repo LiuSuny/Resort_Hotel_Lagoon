@@ -1,6 +1,6 @@
-﻿namespace LagoonStay.Web.ViewModels
+﻿namespace LagoonStay.Application.Common.Dto
 {
-    public class PieChartVM
+    public class PieChartDto
     {
         public decimal[] Series { get; set; }
         public string[] Labels { get; set; }

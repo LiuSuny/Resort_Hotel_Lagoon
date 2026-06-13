@@ -1,6 +1,6 @@
-﻿namespace LagoonStay.Web.ViewModels
+﻿namespace LagoonStay.Application.Common.Dto
 {
-    public class RadialBarChartVM
+    public class RadialBarChartDto
     {
         public decimal TotalCount { get; set; }
         public decimal CountInCurrentMonth { get; set; }

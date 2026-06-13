@@ -1,4 +1,5 @@
-﻿using LagoonStay.Domain.Entities;
+﻿using LagoonStay.Application.Common.Dto;
+using LagoonStay.Domain.Entities;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -56,6 +57,31 @@ namespace LagoonStay.Application.Common.Utilities
                 }
             }
             return finalAvailableRoomsForAllNights;
+        }
+
+        //Helper method
+        public static RadialBarChartDto GetRadialChartDataModel(int totalCount, double currentMonthCount, double previousMonthCount)
+        {
+            // Calculate the increase/decrease ratio and prepare the data for the radial bar chart
+            RadialBarChartDto RadialBarChartDto = new();
+
+            // If there are no users in the previous month, we can consider the increase ratio as 100% if there are users in the current month, otherwise 0%
+            int increaseDecreaseRatio = 100;
+
+            /// If there are users in the previous month, calculate the increase/decrease ratio based on the counts of the current and previous months
+            if (previousMonthCount != 0)
+            {
+                // Calculate the increase/decrease ratio as a percentage
+                increaseDecreaseRatio = Convert.ToInt32((currentMonthCount - previousMonthCount) / previousMonthCount * 100);
+            }
+
+            // Set the properties of the RadialBarChartDto based on the calculated values
+            RadialBarChartDto.TotalCount = totalCount;
+            RadialBarChartDto.CountInCurrentMonth = (int)currentMonthCount;
+            RadialBarChartDto.HasRatioIncreased = currentMonthCount > previousMonthCount;
+            RadialBarChartDto.Series = new int[] { increaseDecreaseRatio };
+
+            return RadialBarChartDto;
         }
     }
 }
