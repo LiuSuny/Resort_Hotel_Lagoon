@@ -75,6 +75,17 @@ namespace LagoonStay.Web.Controllers
 
             if (ModelState.IsValid)
             {
+                //Amenity amenityFromDb = _unitOfWork.Amenity.Get(u => u.Id == amenityVM.Amenity.Id);
+                //if (amenityFromDb.Name.ToLower().Contains("special"))
+                //{
+                //    amenityVM.Amenity.Description = amenityFromDb.Description;
+
+                //}
+                //else
+                //{
+                //_unitOfWork.Amenity.Update(amenityVM.Amenity);
+                //}
+
                 _unitOfWork.Amenity.Update(amenityVM.Amenity);
                 _unitOfWork.Save();
                 TempData["success"] = "The amenity has been updated successfully.";
