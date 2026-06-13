@@ -10,6 +10,7 @@ using Syncfusion.DocIO;
 using Syncfusion.DocIO.DLS;
 using Syncfusion.DocIORenderer;
 using Syncfusion.Drawing;
+using Syncfusion.Pdf;
 using System.Security.Claims;
 
 namespace LagoonStay.Web.Controllers
@@ -180,7 +181,7 @@ namespace LagoonStay.Web.Controllers
         /// <returns></returns>
         [HttpPost]
         [Authorize]
-        public IActionResult GenerateInvoice(int id)
+        public IActionResult GenerateInvoice(int id, string downloadType)
         {
             // Get the base path of the web root directory
             string basePath = _webHostEnvironment.WebRootPath;
@@ -261,8 +262,8 @@ namespace LagoonStay.Web.Controllers
             table.TableFormat.Paddings.Bottom = 7f;
             table.TableFormat.Borders.Horizontal.LineWidth = 1f;
 
-
-            table.ResetCells(2, 4);
+            int rows = bookingFromDb.VillaNumber > 0 ? 3 : 2;
+            table.ResetCells(rows, 4);
 
             WTableRow row0 = table.Rows[0];
 
@@ -283,6 +284,16 @@ namespace LagoonStay.Web.Controllers
             row1.Cells[2].AddParagraph().AppendText((bookingFromDb.TotalCost / bookingFromDb.Nights).ToString("c"));
             row1.Cells[3].AddParagraph().AppendText(bookingFromDb.TotalCost.ToString("c"));
             row1.Cells[3].Width = 80;
+
+            if (bookingFromDb.VillaNumber > 0)
+            {
+                WTableRow row2 = table.Rows[2];
+
+                row2.Cells[0].Width = 80;
+                row2.Cells[1].AddParagraph().AppendText("Villa Number - " + bookingFromDb.VillaNumber.ToString());
+                row2.Cells[1].Width = 220;
+                row2.Cells[3].Width = 80;
+            }
 
             WTableStyle tableStyle = document.AddTableStyle("CustomStyle") as WTableStyle;
             tableStyle.TableProperties.RowStripe = 1;
@@ -308,9 +319,12 @@ namespace LagoonStay.Web.Controllers
 
             // Repeat the process for other placeholders in the template, replacing them with actual booking details
             using DocIORenderer renderer = new();
-
             // Replace the placeholder for the villa name with the actual villa name from the booking details
             MemoryStream stream = new();
+
+            //checking whether it docx
+            if(downloadType == "word")
+            {
             // Save the modified Word document to the memory stream in DOCX format
             document.Save(stream, FormatType.Docx);
 
@@ -319,6 +333,17 @@ namespace LagoonStay.Web.Controllers
 
             // Return the modified Word document as a downloadable file with the appropriate content type and filename
             return File(stream, "application/docx", "BookingDetails.docx");
+            }
+            else
+            {
+                PdfDocument pdfDocument = renderer.ConvertToPDF(document);
+              
+                pdfDocument.Save(stream);          
+                stream.Position = 0;
+
+                // Return the modified Word document as a downloadable file with the appropriate content type and filename
+                return File(stream, "application/pdf", "BookingDetails.pdf");
+            }
 
         }
 
