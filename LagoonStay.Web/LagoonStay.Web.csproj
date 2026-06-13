@@ -13,10 +13,15 @@
     </PackageReference>
     <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="8.0.0" />
     <PackageReference Include="Stripe.net" Version="51.2.0" />
+    <PackageReference Include="Syncfusion.DocIO.Net.Core" Version="33.2.12" />
+    <PackageReference Include="Syncfusion.DocIORenderer.Net.Core" Version="33.2.12" />
+    <PackageReference Include="Syncfusion.Licensing" Version="33.2.12" />
+    <PackageReference Include="Syncfusion.Pdf.Net.Core" Version="33.2.12" />
   </ItemGroup>
 
   <ItemGroup>
     <Folder Include="wwwroot\images\VillaImage\" />
+    <Folder Include="wwwroot\exports\" />
   </ItemGroup>
 
   <ItemGroup>

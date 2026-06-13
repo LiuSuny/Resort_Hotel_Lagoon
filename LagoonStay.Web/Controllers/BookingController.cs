@@ -1,10 +1,14 @@
-﻿using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
-using LagoonStay.Application.Common.Interfaces;
+﻿using LagoonStay.Application.Common.Interfaces;
 using LagoonStay.Application.Common.Utilities;
 using LagoonStay.Domain.Entities;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Mvc;
 using Stripe;
 using Stripe.Checkout;
+using Syncfusion.DocIO;
+using Syncfusion.DocIO.DLS;
+using Syncfusion.DocIORenderer;
 using System.Security.Claims;
 
 namespace LagoonStay.Web.Controllers
@@ -12,10 +16,12 @@ namespace LagoonStay.Web.Controllers
     public class BookingController : Controller
     {
         private readonly IUnitOfWork _unitOfWork;
+        private readonly IWebHostEnvironment _webHostEnvironment;
 
-        public BookingController(IUnitOfWork unitOfWork)
+        public BookingController(IUnitOfWork unitOfWork, IWebHostEnvironment webHostEnvironment)
         {
             _unitOfWork = unitOfWork;
+            _webHostEnvironment = webHostEnvironment;
         }
         [Authorize]
         public IActionResult Index()
@@ -163,7 +169,104 @@ namespace LagoonStay.Web.Controllers
             }
 
             return View(bookingFromDb);
-        }   
+        }
+
+
+        /// <summary>
+        /// Medthod to generate an invoice for a booking using a Word template and return it as a downloadable file.
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
+        [HttpPost]
+        [Authorize]
+        public IActionResult GenerateInvoice(int id)
+        {
+            // Get the base path of the web root directory
+            string basePath = _webHostEnvironment.WebRootPath;
+
+            // Create a new WordDocument instance to work with the Word template
+            WordDocument document = new WordDocument();
+
+
+            // Load the template.
+            string dataPath = basePath + @"/exports/BookingDetails.docx";
+
+            // Open the Word template file in read-only mode to avoid locking issues
+            using FileStream fileStream = new(dataPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+
+            // Open the Word document using the file stream and automatically detect the format type
+            document.Open(fileStream, FormatType.Automatic);
+
+            // Retrieve the booking details from the database using the provided booking ID, including related User and Villa data
+            Booking bookingFromDb = _unitOfWork.Booking.Get(u => u.Id == id,
+                            includeProperties: "User,Villa");
+
+            // Replace placeholders in the Word template with actual booking details
+            TextSelection textSelection = document.Find("xx_customer_name", false, true);
+
+            // Get the text range of the found placeholder and replace it with the customer's name
+            WTextRange textRange = textSelection.GetAsOneRange();
+
+            // Set the text of the placeholder to the customer's name from the booking details
+            textRange.Text = bookingFromDb.Name;
+
+            // Fill the same just like the xx_customer_name
+            textSelection = document.Find("xx_customer_phone", false, true);
+            textRange = textSelection.GetAsOneRange();
+            textRange.Text = bookingFromDb.Phone;
+
+            // Fill the same just like the xx_customer_name
+            textSelection = document.Find("xx_customer_email", false, true);
+            textRange = textSelection.GetAsOneRange();
+            textRange.Text = bookingFromDb.Email;
+
+            // Fill the same just like the xx_customer_name
+            textSelection = document.Find("xx_payment_date", false, true);
+            textRange = textSelection.GetAsOneRange();
+            textRange.Text = bookingFromDb.PaymentDate.ToShortDateString();
+
+            // Fill the same just like the xx_customer_name
+            textSelection = document.Find("XX_BOOKING_NUMBER", false, true);
+            textRange = textSelection.GetAsOneRange();
+            textRange.Text = "BOOKING ID: " + bookingFromDb.Id;
+
+            // Fill the same just like the xx_customer_name
+            textSelection = document.Find("XX_BOOKING_DATE", false, true);
+            textRange = textSelection.GetAsOneRange();
+            textRange.Text = "BOOKING DATE: "+ bookingFromDb.BookingDate.ToShortDateString();
+
+            // Fill the same just like the xx_customer_name
+            textSelection = document.Find("xx_checkin_date", false, true);
+            textRange = textSelection.GetAsOneRange();
+            textRange.Text = bookingFromDb.CheckInDate.ToShortDateString();
+
+            // Fill the same just like the xx_customer_name
+            textSelection = document.Find("xx_checkout_date", false, true);
+            textRange = textSelection.GetAsOneRange();
+            textRange.Text = bookingFromDb.CheckOutDate.ToShortDateString();
+
+            // Fill the same just like the xx_customer_name
+            textSelection = document.Find("xx_booking_total", false, true);
+            textRange = textSelection.GetAsOneRange();
+            textRange.Text = bookingFromDb.TotalCost.ToString("c");
+
+            // Repeat the process for other placeholders in the template, replacing them with actual booking details
+            using DocIORenderer renderer = new();
+
+            // Replace the placeholder for the villa name with the actual villa name from the booking details
+            MemoryStream stream = new();
+            // Save the modified Word document to the memory stream in DOCX format
+            document.Save(stream, FormatType.Docx);
+
+            // Reset the position of the memory stream to the beginning before returning it as a file
+            stream.Position = 0;
+
+            // Return the modified Word document as a downloadable file with the appropriate content type and filename
+            return File(stream, "application/docx", "BookingDetails.docx");
+
+        }
+
+
         private List<int> AssignAvailableVillaNumberByVilla(int villaId)
         {
             List<int> availableVillaNumber = new();

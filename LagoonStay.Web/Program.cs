@@ -5,6 +5,7 @@ using LagoonStay.Domain.Entities;
 using LagoonStay.Infrastructure.Data;
 using LagoonStay.Infrastructure.Repository;
 using Stripe;
+using Syncfusion.Licensing;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -44,6 +45,9 @@ builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 var app = builder.Build();
 //configure the Stripe API key & Need to uncommented 
 StripeConfiguration.ApiKey = builder.Configuration.GetSection("Stripe:StripeSec").Get<string>(); //This line retrieves the Stripe secret key from the configuration and sets it for use in the application.
+
+//This line retrieves the Syncfusion license key from the configuration and registers it for use in the application.
+SyncfusionLicenseProvider.RegisterLicense(builder.Configuration.GetSection("Syncfusion:SyncfusionSec").Get<string>()); 
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
